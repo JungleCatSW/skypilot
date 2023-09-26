@@ -16,12 +16,14 @@ from sky.clouds.lambda_cloud import Lambda
 from sky.clouds.local import Local
 from sky.clouds.oci import OCI
 from sky.clouds.scp import SCP
+from sky.clouds.cudo import Cudo
 
 __all__ = [
     'IBM',
     'AWS',
     'Azure',
     'Cloud',
+    'Cudo',
     'GCP',
     'Lambda',
     'Local',
