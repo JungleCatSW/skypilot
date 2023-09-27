@@ -19,7 +19,7 @@ def validate_region_zone(
         zone: Optional[str]) -> Tuple[Optional[str], Optional[str]]:
     if zone is not None:
         with ux_utils.print_exception_no_traceback():
-            raise ValueError('FluffyCloud does not support zones.')
+            raise ValueError('Cudo does not support zones.')
     return common.validate_region_zone_impl('<cloudname>', _df, region, zone)  # FILL_IN: cloudname
 
 
@@ -29,7 +29,7 @@ def accelerator_in_region_or_zone(acc_name: str,
                                   zone: Optional[str] = None) -> bool:
     if zone is not None:
         with ux_utils.print_exception_no_traceback():
-            raise ValueError('FlufflyCloud does not support zones.')
+            raise ValueError('Cudo does not support zones.')
     return common.accelerator_in_region_or_zone_impl(_df, acc_name, acc_count,
                                                      region, zone)
 
@@ -39,10 +39,10 @@ def get_hourly_cost(instance_type: str,
                     region: Optional[str] = None,
                     zone: Optional[str] = None) -> float:
     """Returns the cost, or the cheapest cost among all zones for spot."""
-    assert not use_spot, 'FluffyCloud does not support spot.'
+    assert not use_spot, 'Cudo does not support spot.'
     if zone is not None:
         with ux_utils.print_exception_no_traceback():
-            raise ValueError('FluffyCloud does not support zones.')
+            raise ValueError('Cudo does not support zones.')
     return common.get_hourly_cost_impl(_df, instance_type, use_spot, region,
                                        zone)
 
@@ -77,7 +77,7 @@ def get_instance_type_for_accelerator(
     """
     if zone is not None:
         with ux_utils.print_exception_no_traceback():
-            raise ValueError('FluffyCloud does not support zones.')
+            raise ValueError('Cudo does not support zones.')
     return common.get_instance_type_for_accelerator_impl(df=_df,
                                                          acc_name=acc_name,
                                                          acc_count=acc_count,
@@ -101,6 +101,6 @@ def list_accelerators(
         quantity_filter: Optional[int],
         case_sensitive: bool = True
 ) -> Dict[str, List[common.InstanceTypeInfo]]:
-    """Returns all instance types in FluffyCloud offering GPUs."""
+    """Returns all instance types in Cudo offering GPUs."""
     return common.list_accelerators_impl(
-        'FluffyCloud', _df, gpus_only, name_filter, region_filter, quantity_filter, case_sensitive)
+        'Cudo', _df, gpus_only, name_filter, region_filter, quantity_filter, case_sensitive)

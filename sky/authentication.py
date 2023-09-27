@@ -127,6 +127,13 @@ def setup_aws_authentication(config: Dict[str, Any]) -> Dict[str, Any]:
     config = _replace_ssh_info_in_config(config, public_key)
     return config
 
+def setup_cudo_authentication(config: Dict[str, Any]) -> Dict[str, Any]:
+    _, public_key_path = get_or_generate_keys()
+    with open(public_key_path, 'r') as f:
+        public_key = f.read().strip()
+    config = _replace_ssh_info_in_config(config, public_key)
+    return config
+
 
 # Snippets of code inspired from
 # https://github.com/ray-project/ray/blob/master/python/ray/autoscaler/_private/gcp/config.py

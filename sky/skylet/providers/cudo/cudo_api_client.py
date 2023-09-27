@@ -2,6 +2,8 @@ from typing import Dict
 import sky.skylet.providers.cudo.config as config
 
 import sky.skylet.providers.cudo.cudo_client.swagger_client as client
+import sky.skylet.providers.cudo.config as cudo_config
+
 from sky.skylet.providers.cudo.cudo_client.swagger_client.rest import ApiException
 
 def launch(name: str,
@@ -34,6 +36,17 @@ def set_tags(instance_id: str, tags: Dict, api_key: str):
 
 
 def list_instances(api_key: str):
+    project_id, e = cudo_config.get_project()
+
+    try:
+        vms = c.list_vms(project_id)
+
+        # TODO make dictionary
+        return True, None
+    except ApiException as e:
+        return False, (
+            f'Error calling API '
+            f'{common_utils.format_exception(e, use_bracket=True)}')
     """Lists instances associated with API_KEY.
 
     Returns a dictionary:

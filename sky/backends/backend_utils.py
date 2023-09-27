@@ -1162,6 +1162,8 @@ def _add_auth_to_cluster_config(cloud: clouds.Cloud, cluster_config_file: str):
     # Check the availability of the cloud type.
     if isinstance(cloud, clouds.AWS):
         config = auth.setup_aws_authentication(config)
+    elif isinstance(cloud, clouds.Cudo):
+        config = auth.setup_cudo_authentication(config)
     elif isinstance(cloud, clouds.GCP):
         config = auth.setup_gcp_authentication(config)
     elif isinstance(cloud, clouds.Azure):

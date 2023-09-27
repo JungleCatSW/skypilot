@@ -25,7 +25,7 @@ _CREDENTIAL_FILES = [
 @clouds.CLOUD_REGISTRY.register
 class Cudo(clouds.Cloud):
 
-    _REPR = 'Cudo'
+    _REPR = 'cudo'
     _CLOUD_UNSUPPORTED_FEATURES = {
         clouds.CloudImplementationFeatures.STOP: 'Cudo does not support stopping VMs.',
         clouds.CloudImplementationFeatures.AUTOSTOP: 'Cudo does not support stopping VMs.',
@@ -73,7 +73,7 @@ class Cudo(clouds.Cloud):
             regions = cls.regions()
         else:
             regions = service_catalog.get_region_zones_for_instance_type(
-                instance_type, use_spot, 'Cudo')
+                instance_type, use_spot, 'cudo')
 
         if region is not None:
             regions = [r for r in regions if r.name == region]
@@ -84,8 +84,8 @@ class Cudo(clouds.Cloud):
         cls,
         instance_type: str,
     ) -> Tuple[Optional[float], Optional[float]]:
-        # FILL_IN: cloudname
-        return service_catalog.get_vcpus_mem_from_instance_type(instance_type, clouds='<cloudname>')
+
+        return service_catalog.get_vcpus_mem_from_instance_type(instance_type, clouds='cudo')
 
     @classmethod
     def zones_provision_loop(
@@ -116,7 +116,7 @@ class Cudo(clouds.Cloud):
                                                use_spot=use_spot,
                                                region=region,
                                                zone=zone,
-                                               clouds='Cudo')
+                                               clouds='cudo')
 
     def accelerators_to_hourly_cost(self,
                                     accelerators: Dict[str, int],
@@ -138,7 +138,7 @@ class Cudo(clouds.Cloud):
         return 0.0
 
     def __repr__(self):
-        return 'Cudo'
+        return 'cudo'
 
     def is_same_cloud(self, other: clouds.Cloud) -> bool:
         # Returns true if the two clouds are the same cloud type.
@@ -146,7 +146,7 @@ class Cudo(clouds.Cloud):
 
     @classmethod
     def get_default_instance_type(cls, cpus: Optional[str] = None) -> Optional[str]:
-        return service_catalog.get_default_instance_type(cpus=cpus, clouds='Cudo')
+        return service_catalog.get_default_instance_type(cpus=cpus, clouds='cudo')
 
     @classmethod
     def get_accelerators_from_instance_type(
@@ -154,7 +154,7 @@ class Cudo(clouds.Cloud):
         instance_type: str,
     ) -> Optional[Dict[str, int]]:
         return service_catalog.get_accelerators_from_instance_type(
-            instance_type, clouds='Cudo')
+            instance_type, clouds='cudo')
 
     @classmethod
     def get_vcpus_from_instance_type(
@@ -162,7 +162,7 @@ class Cudo(clouds.Cloud):
         instance_type: str,
     ) -> Optional[float]:
         return service_catalog.get_vcpus_from_instance_type(instance_type,
-                                                            clouds='Cudo')
+                                                            clouds='cudo')
 
     @classmethod
     def get_zone_shell_cmd(cls) -> Optional[str]:
@@ -236,7 +236,7 @@ class Cudo(clouds.Cloud):
             cpus=resources.cpus,
             region=resources.region,
             zone=resources.zone,
-            clouds='Cudo')
+            clouds='cudo')
         if instance_list is None:
             return ([], fuzzy_candidate_list)
         return (_make(instance_list), fuzzy_candidate_list)
@@ -255,7 +255,7 @@ class Cudo(clouds.Cloud):
                 f'Error getting project '
                 f'{common_utils.format_exception(e, use_bracket=True)}')
         try:
-            vms = c.list_vms(project_id)
+            c.list_vms(project_id)
             return True,None
         except ApiException as e:
             return False, (
@@ -274,12 +274,12 @@ class Cudo(clouds.Cloud):
         return None
 
     def instance_type_exists(self, instance_type: str) -> bool:
-        return service_catalog.instance_type_exists(instance_type, 'Cudo')
+        return service_catalog.instance_type_exists(instance_type, 'cudo')
 
     def validate_region_zone(self, region: Optional[str], zone: Optional[str]):
         return service_catalog.validate_region_zone(region,
                                                     zone,
-                                                    clouds='Cudo')
+                                                    clouds='cudo')
 
     def accelerator_in_region_or_zone(self,
                                       accelerator: str,
@@ -287,7 +287,7 @@ class Cudo(clouds.Cloud):
                                       region: Optional[str] = None,
                                       zone: Optional[str] = None) -> bool:
         return service_catalog.accelerator_in_region_or_zone(
-            accelerator, acc_count, region, zone, 'Cudo')
+            accelerator, acc_count, region, zone, 'cudo')
 
     @classmethod
     def query_status(cls, name: str, tag_filters: Dict[str, str],
