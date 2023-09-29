@@ -1,13 +1,8 @@
 """
-This file should be placed at sky/skylet/providers/{cloudname}/node_provider.py
-
 Methods that start with an underscore (_) are specific to SkyPilot,
 and not part of the ray NodeProvider class definition.
-
-Template Usage:
-    - Replace all the FILL_INs with your own code.
 """
-
+import os
 import logging
 from typing import Any, Dict, List, Optional
 
@@ -15,11 +10,8 @@ from threading import RLock
 
 from ray.autoscaler.node_provider import NodeProvider
 from ray.autoscaler.tags import TAG_RAY_CLUSTER_NAME
+from sky import authentication as auth
 
-
-# FILL_IN: Import your python cloud library here.
-# Replace library usage found in this template.
-# A wrapper/helper is recommended to keep the code clean.
 import sky.skylet.providers.cudo.cudo_api_client as cudo_api
 import sky.skylet.providers.cudo.config as cudo_config
 logger = logging.getLogger(__name__)
@@ -51,6 +43,7 @@ class CudoNodeProvider(NodeProvider):
 
         api_key, error = cudo_config.get_api_key()
         self.api_key =  api_key
+        self.ssh_key_path = os.path.expanduser(auth.PUBLIC_SSH_KEY_PATH)
         self.ssh_key_name =  None # TODO FILL_IN: Read from credentials file
 
     def non_terminated_nodes(self, tag_filters: Dict[str, str]) -> List[str]:
@@ -99,18 +92,21 @@ class CudoNodeProvider(NodeProvider):
         ttype = node_config['InstanceType']
         region = self.provider_config['region']
 
+        with open(self.ssh_key_path, 'r') as f:
+            public_key = f.read().strip()
+
         for _ in range(count):
             instance_id = cudo_api.launch(name=self.cluster_name,
                                           instance_type=ttype,
                                           region=region,
                                           api_key=self.api_key,
-                                          ssh_key_name=self.ssh_key_name)
+                                          ssh_key=public_key)
 
         if instance_id is None:
             raise CudoError('Failed to launch instance.')
 
         cudo_api.set_tags(instance_id, config_tags, self.api_key)
-
+        #   TODO wait for
         # FILL_IN: Only return after all nodes are booted.
         # If needed poll fc_api.list_instances() to wait for status == 'running'
 
@@ -149,7 +145,7 @@ class CudoNodeProvider(NodeProvider):
             - name: str
             - ip: str
         """
-        instances = cudo_api.list_instances(self.api_key)  # FILL_IN
+        instances = cudo_api.list_instances() #TODO add tag filtering
 
         new_cache = {}
         for instance_id, instance in instances.items():

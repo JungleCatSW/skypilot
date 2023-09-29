@@ -295,20 +295,17 @@ class Cudo(clouds.Cloud):
                      **kwargs) -> List[status_lib.ClusterStatus]:
         del tag_filters, region, zone, kwargs  # Unused.
 
-        # FILL_IN: For the status map, map the Cudo status to the SkyPilot status.
-        # SkyPilot status is defined in sky/status_lib.py
-        # Example: status_map = {'CREATING': status_lib.ClusterStatus.INIT, ...}
-        # The keys are the Cudo status, and the values are the SkyPilot status.
         status_map = {
-            'CREATING': status_lib.ClusterStatus.INIT,
-            'EDITING': status_lib.ClusterStatus.INIT,
-            'RUNNING': status_lib.ClusterStatus.UP,
-            'STARTING': status_lib.ClusterStatus.INIT,
-            'RESTARTING': status_lib.ClusterStatus.INIT,
-            'STOPPING': status_lib.ClusterStatus.STOPPED,
-            'STOPPED': status_lib.ClusterStatus.STOPPED,
-            'TERMINATING': None,
-            'TERMINATED': None,
+            'init': status_lib.ClusterStatus.INIT,
+            'pend': status_lib.ClusterStatus.INIT,
+            'prol': status_lib.ClusterStatus.INIT,
+            'boot': status_lib.ClusterStatus.INIT,
+            'runn': status_lib.ClusterStatus.UP,
+            'stop': status_lib.ClusterStatus.STOPPED,
+            'susp': status_lib.ClusterStatus.STOPPED,
+            'done': status_lib.ClusterStatus.STOPPED,
+            'poff': status_lib.ClusterStatus.STOPPED,
+            #TODO set others statuses to runn or None
         }
         status_list = []
         vms = cudo_api.list_instances()
