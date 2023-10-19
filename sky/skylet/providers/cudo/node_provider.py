@@ -4,6 +4,7 @@ and not part of the ray NodeProvider class definition.
 """
 import os
 import logging
+import time
 from typing import Any, Dict, List, Optional
 
 from threading import RLock
@@ -94,19 +95,33 @@ class CudoNodeProvider(NodeProvider):
 
         with open(self.ssh_key_path, 'r') as f:
             public_key = f.read().strip()
-
+        instance_ids = []
         for _ in range(count):
             instance_id = cudo_api.launch(name=self.cluster_name,
                                           instance_type=ttype,
                                           region=region,
                                           api_key=self.api_key,
                                           ssh_key=public_key)
+            if instance_id is None:
+                raise CudoError('Failed to launch instance.')
 
-        if instance_id is None:
-            raise CudoError('Failed to launch instance.')
+            instance_ids.append(instance_id)
+            cudo_api.set_tags(instance_id, config_tags, self.api_key)
 
-        cudo_api.set_tags(instance_id, config_tags, self.api_key)
-        #   TODO wait for
+        retries = 12  # times 10 second
+        period = 10  # seconds
+        results = {}
+        for id in instance_ids:
+            n = 0
+            while n in range(retries):
+                vm = cudo_api.get_instance(id)
+                if vm['vm']['short_state'] == 'runn':
+                    results[id] = vm['vm']
+                    break
+                else:
+                    time.sleep(period)
+        return results
+        #   TODO wait for -- but what if they don't boot ?
         # FILL_IN: Only return after all nodes are booted.
         # If needed poll fc_api.list_instances() to wait for status == 'running'
 
@@ -149,10 +164,13 @@ class CudoNodeProvider(NodeProvider):
 
         new_cache = {}
         for instance_id, instance in instances.items():
-            if instance['status'] != 'running':
+            if instance['status'] != 'runn':
                 continue
-            if any(tag in instance['tags'] for tag in tag_filters):
+
+            if tag_filters == {}:
                 new_cache[instance_id] = instance
+            elif any(tag in instance['tags'] for tag in tag_filters): #TODO tags system add this back in
+                 new_cache[instance_id] = instance
 
         self.cached_nodes = new_cache
         return self.cached_nodes

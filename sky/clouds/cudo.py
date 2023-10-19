@@ -310,7 +310,7 @@ class Cudo(clouds.Cloud):
         status_list = []
         vms = cudo_api.list_instances()
         for node in vms:
-            if node['name'] == name:
+            if vms[node]['name'] == name:
                 node_status = status_map[node['status']]
                 if node_status is not None:
                     status_list.append(node_status)

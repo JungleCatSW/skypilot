@@ -5,7 +5,7 @@ import sky.skylet.providers.cudo.config as config
 
 import sky.skylet.providers.cudo.cudo_client.swagger_client as client
 import sky.skylet.providers.cudo.config as cudo_config
-import sky.skylet.providers.cudo.cudo_api_client as cudo_api
+import sky.skylet.providers.cudo.temp_tags as cudo_tags
 from sky.skylet.providers.cudo.cudo_client.swagger_client import Body8
 from sky.skylet.providers.cudo.cudo_client.swagger_client import Disk
 
@@ -49,7 +49,7 @@ def launch(name: str,
 
     try:
         project_id, e = cudo_config.get_project()
-        c, e = cudo_api.get_client()
+        c, e = get_client()
         vm = c.create_vm(project_id,request)
         return vm.to_dict()['id']
     except ApiException as e: # TODO what to do with errors ?
@@ -64,19 +64,31 @@ def remove(instance_id: str, api_key: str):
 def set_tags(instance_id: str, tags: Dict, api_key: str):
     """Set tags for instance with given INSTANCE_ID."""
     print("cudo set tags" + instance_id)
+    cudo_tags.set_tags(instance_id,tags) #TODO replace this
 
+
+def get_instance(vm_id):
+    try:
+        project_id, e = cudo_config.get_project()
+        c, e = get_client()
+        vm = c.get_vm(project_id,vm_id)
+        vm_dict = vm.to_dict()
+        return vm_dict
+    except ApiException as e:  # TODO what to do with errors ?
+        raise e
 
 def list_instances():
     try:
         project_id, e = cudo_config.get_project()
-        c, e = cudo_api.get_client()
+        c, e = get_client()
         vms = c.list_vms(project_id)
         instances = {}
         vms_dict = vms.to_dict()
         for vm in vms_dict['vms']:
+            tags = cudo_tags.get_tags(vm['id'])
             instance = {
                 'status': vm['short_state'], # active_state, init_state, lcm_state, short_state
-                'tags': [], #TODO add tags to API
+                'tags': tags,
                 'name': vm['id'], # TODO check ip address for private networks
                 'ip': vm['public_ip_address'] # public_ip_address, external_ip_address,
              }
