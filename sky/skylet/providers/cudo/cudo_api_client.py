@@ -43,7 +43,7 @@ def launch(name: str,
     #epyc-milan-rtx-a5000
 
     request = Body8(ssh_key_source=key_source, custom_ssh_keys=[ssh_key],vm_id=name, machine_type='intel-broadwell',
-                    data_center_id='gb-bournemouth-1', boot_disk_image_id='ubuntu-nvidia-docker',
+                    data_center_id=region, boot_disk_image_id='ubuntu-nvidia-docker',
                     memory_gib=8, vcpus=4, boot_disk=disk)
 
 

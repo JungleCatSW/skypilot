@@ -20,7 +20,7 @@ def validate_region_zone(
     if zone is not None:
         with ux_utils.print_exception_no_traceback():
             raise ValueError('Cudo does not support zones.')
-    return common.validate_region_zone_impl('<cloudname>', _df, region, zone)  # FILL_IN: cloudname
+    return common.validate_region_zone_impl('cudo', _df, region, zone)
 
 
 def accelerator_in_region_or_zone(acc_name: str,
@@ -102,5 +102,6 @@ def list_accelerators(
         case_sensitive: bool = True
 ) -> Dict[str, List[common.InstanceTypeInfo]]:
     """Returns all instance types in Cudo offering GPUs."""
-    return common.list_accelerators_impl(
+    list =  common.list_accelerators_impl(
         'Cudo', _df, gpus_only, name_filter, region_filter, quantity_filter, case_sensitive)
+    return list

@@ -2,7 +2,7 @@ resources:
   # Optional; if left out, automatically pick the cheapest cloud.
   cloud: cudo
   # 1x NVIDIA V100 GPU
-  accelerators: A6000
+  accelerators: A4500
 
 # Working directory (optional) containing the project codebase.
 # Its contents are synced to ~/sky_workdir/ on the cluster.
