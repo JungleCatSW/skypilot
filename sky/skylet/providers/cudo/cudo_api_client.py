@@ -42,6 +42,8 @@ def launch(name: str,
     #intel-broadwell
     #epyc-milan-rtx-a5000
 
+    # Add tags
+    # TODO create lookup
     request = Body8(ssh_key_source=key_source, custom_ssh_keys=[ssh_key],vm_id=name, machine_type='intel-broadwell',
                     data_center_id=region, boot_disk_image_id='ubuntu-nvidia-docker',
                     memory_gib=8, vcpus=4, boot_disk=disk)
@@ -105,7 +107,7 @@ def get_client():
         return None, err
 
     configuration.api_key['Authorization'] = key
-    configuration.debug = True
+    # configuration.debug = True
     configuration.api_key_prefix['Authorization'] = 'Bearer'
     configuration.host = "https://rest.compute.cudo.org"
 
@@ -113,3 +115,24 @@ def get_client():
     vms_api_client = client.VirtualMachinesApi(sclient)
     return vms_api_client, None
 
+
+def machine_types(gpu_model,mem_gib,vcpu_count,gpu_count):
+    try:
+        c, e = get_client()
+        types = c.list_vm_machine_types(mem_gib,vcpu_count,gpu=gpu_count)
+        types_dict = types.to_dict()
+        return types_dict
+    except ApiException as e: # TODO what to do with errors ?
+        raise e
+
+def gpu_types():
+    try:
+        c, e = get_client()
+        types = c.list_vm_machine_types(4,2)
+        types_dict = types.to_dict()
+        gpu_names = []
+        for gpu in types_dict['gpu_models']:
+            gpu_names.append(gpu['name'])
+        return gpu_names
+    except ApiException as e: # TODO what to do with errors ?
+        raise e
