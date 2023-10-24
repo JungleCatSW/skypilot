@@ -55,9 +55,15 @@ def launch(name: str,
         raise e
 
 
-def remove(instance_id: str, api_key: str):
-    """Removes instance with given INSTANCE_ID."""
-    print("cudo remove" + instance_id)
+def terminate(instance_id: str):
+    try:
+        project_id, e = cudo_config.get_project()
+        c, e = get_client()
+        res = c.terminate_vm(project_id, instance_id)
+        if res != None:
+            return res.to_dict()
+    except ApiException as e:  # TODO what to do with errors ?
+        raise e
 
 
 def set_tags(instance_id: str, tags: Dict, api_key: str):

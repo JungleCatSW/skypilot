@@ -141,7 +141,7 @@ class CudoNodeProvider(NodeProvider):
 
     def terminate_node(self, node_id: str) -> Optional[Dict[str, Any]]:
         """Terminates the specified node."""
-        cudo_api.remove(node_id, self.api_key)  # FILL_IN
+        cudo_api.terminate(node_id)
 
     @synchronized
     def _get_filtered_nodes(self, tag_filters: Dict[str, str]) -> Dict[str, Any]:
