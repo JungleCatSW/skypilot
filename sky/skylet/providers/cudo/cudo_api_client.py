@@ -10,6 +10,8 @@ from sky.skylet.providers.cudo.cudo_client.swagger_client import Body8
 from sky.skylet.providers.cudo.cudo_client.swagger_client import Disk
 
 from sky.skylet.providers.cudo.cudo_client.swagger_client.rest import ApiException
+
+
 def generate_random_string(length):
     # Define the characters to choose from
     characters = string.ascii_lowercase + string.digits
@@ -19,11 +21,15 @@ def generate_random_string(length):
 
     return random_string
 
+
 def launch(name: str,
-           instance_type: str,
-           region: str,
-           api_key: str,
-           ssh_key: str):
+           data_center_id: str,
+           ssh_key: str,
+           machine_type: str,
+           memory_gib: int,
+           vcpu_count: int,
+           gpu_count: int,
+           gpu_model: str):
     """
 
     Launches an INSTANCE_TYPE instance in region REGION with given NAME.
@@ -31,30 +37,21 @@ def launch(name: str,
 
     Returns INSTANCE_ID if successful, otherwise returns None.
     """
-    # need a datacenter id ?
 
-    disk = Disk(storage_class="STORAGE_CLASS_NETWORK", size_gib=50, id=generate_random_string(10)) #, disk_type=disk_type)
-    key_source = "SSH_KEY_SOURCE_NONE" # SshKeySource()
-    #You must specify a data center and machine type or a maximum price per hour.
-    #standard
-    #intel-haswell
-    #epyc-rome-rtx-4000
-    #intel-broadwell
-    #epyc-milan-rtx-a5000
+    disk = Disk(storage_class="STORAGE_CLASS_NETWORK", size_gib=50,
+                id=generate_random_string(10))  # , disk_type=disk_type)
+    key_source = "SSH_KEY_SOURCE_NONE"
 
-    # Add tags
-    # TODO create lookup
-    request = Body8(ssh_key_source=key_source, custom_ssh_keys=[ssh_key],vm_id=name, machine_type='intel-broadwell',
-                    data_center_id=region, boot_disk_image_id='ubuntu-nvidia-docker',
-                    memory_gib=8, vcpus=4, boot_disk=disk)
-
+    request = Body8(ssh_key_source=key_source, custom_ssh_keys=[ssh_key], vm_id=name, machine_type=machine_type,
+                    data_center_id=data_center_id, boot_disk_image_id='ubuntu-nvidia-docker',
+                    memory_gib=memory_gib, vcpus=vcpu_count, gpus=gpu_count, gpu_model=gpu_model, boot_disk=disk)
 
     try:
         project_id, e = cudo_config.get_project()
         c, e = get_client()
-        vm = c.create_vm(project_id,request)
+        vm = c.create_vm(project_id, request)
         return vm.to_dict()['id']
-    except ApiException as e: # TODO what to do with errors ?
+    except ApiException as e:  # TODO what to do with errors ?
         raise e
 
 
@@ -66,18 +63,19 @@ def remove(instance_id: str, api_key: str):
 def set_tags(instance_id: str, tags: Dict, api_key: str):
     """Set tags for instance with given INSTANCE_ID."""
     print("cudo set tags" + instance_id)
-    cudo_tags.set_tags(instance_id,tags) #TODO replace this
+    cudo_tags.set_tags(instance_id, tags)  # TODO replace this
 
 
 def get_instance(vm_id):
     try:
         project_id, e = cudo_config.get_project()
         c, e = get_client()
-        vm = c.get_vm(project_id,vm_id)
+        vm = c.get_vm(project_id, vm_id)
         vm_dict = vm.to_dict()
         return vm_dict
     except ApiException as e:  # TODO what to do with errors ?
         raise e
+
 
 def list_instances():
     try:
@@ -89,15 +87,16 @@ def list_instances():
         for vm in vms_dict['vms']:
             tags = cudo_tags.get_tags(vm['id'])
             instance = {
-                'status': vm['short_state'], # active_state, init_state, lcm_state, short_state
+                'status': vm['short_state'],  # active_state, init_state, lcm_state, short_state
                 'tags': tags,
-                'name': vm['id'], # TODO check ip address for private networks
-                'ip': vm['public_ip_address'] # public_ip_address, external_ip_address,
-             }
+                'name': vm['id'],  # TODO check ip address for private networks
+                'ip': vm['public_ip_address']  # public_ip_address, external_ip_address,
+            }
             instances[vm['id']] = instance
         return instances
-    except ApiException as e: # TODO what to do with errors ?
+    except ApiException as e:  # TODO what to do with errors ?
         raise e
+
 
 def get_client():
     configuration = client.Configuration()
@@ -116,23 +115,24 @@ def get_client():
     return vms_api_client, None
 
 
-def machine_types(gpu_model,mem_gib,vcpu_count,gpu_count):
+def machine_types(gpu_model, mem_gib, vcpu_count, gpu_count):
     try:
         c, e = get_client()
-        types = c.list_vm_machine_types(mem_gib,vcpu_count,gpu=gpu_count)
+        types = c.list_vm_machine_types(mem_gib, vcpu_count, gpu=gpu_count, gpu_model=gpu_model)
         types_dict = types.to_dict()
         return types_dict
-    except ApiException as e: # TODO what to do with errors ?
+    except ApiException as e:  # TODO what to do with errors ?
         raise e
+
 
 def gpu_types():
     try:
         c, e = get_client()
-        types = c.list_vm_machine_types(4,2)
+        types = c.list_vm_machine_types(4, 2)
         types_dict = types.to_dict()
         gpu_names = []
         for gpu in types_dict['gpu_models']:
             gpu_names.append(gpu['name'])
         return gpu_names
-    except ApiException as e: # TODO what to do with errors ?
+    except ApiException as e:  # TODO what to do with errors ?
         raise e

@@ -15,6 +15,8 @@ from sky import authentication as auth
 
 import sky.skylet.providers.cudo.cudo_api_client as cudo_api
 import sky.skylet.providers.cudo.config as cudo_config
+from sky.skylet.providers.cudo.cudo_machine_type import get_spec_from_instance
+
 logger = logging.getLogger(__name__)
 
 
@@ -43,9 +45,9 @@ class CudoNodeProvider(NodeProvider):
         self.cached_nodes = {}
 
         api_key, error = cudo_config.get_api_key()
-        self.api_key =  api_key
+        self.api_key = api_key
         self.ssh_key_path = os.path.expanduser(auth.PUBLIC_SSH_KEY_PATH)
-        self.ssh_key_name =  None # TODO FILL_IN: Read from credentials file
+        self.ssh_key_name = None  # TODO FILL_IN: Read from credentials file
 
     def non_terminated_nodes(self, tag_filters: Dict[str, str]) -> List[str]:
         """Return a list of node ids filtered by the specified tags dict.
@@ -91,17 +93,22 @@ class CudoNodeProvider(NodeProvider):
 
         # Create nodes
         ttype = node_config['InstanceType']
-        region = self.provider_config['region']
+        data_center_id = self.provider_config['region']
 
         with open(self.ssh_key_path, 'r') as f:
             public_key = f.read().strip()
         instance_ids = []
         for _ in range(count):
+            spec = get_spec_from_instance(ttype, data_center_id)
+
             instance_id = cudo_api.launch(name=self.cluster_name,
-                                          instance_type=ttype,
-                                          region=region,
-                                          api_key=self.api_key,
-                                          ssh_key=public_key)
+                                          ssh_key=public_key,
+                                          data_center_id=data_center_id,
+                                          machine_type=spec['machine_type'],
+                                          memory_gib=int(spec['mem_gb']),
+                                          vcpu_count=int(spec['vcpu_count']),
+                                          gpu_count=int(float(spec['gpu_count'])),
+                                          gpu_model=spec['gpu_model'])
             if instance_id is None:
                 raise CudoError('Failed to launch instance.')
 
@@ -160,7 +167,7 @@ class CudoNodeProvider(NodeProvider):
             - name: str
             - ip: str
         """
-        instances = cudo_api.list_instances() #TODO add tag filtering
+        instances = cudo_api.list_instances()  # TODO add tag filtering
 
         new_cache = {}
         for instance_id, instance in instances.items():
@@ -169,8 +176,8 @@ class CudoNodeProvider(NodeProvider):
 
             if tag_filters == {}:
                 new_cache[instance_id] = instance
-            elif any(tag in instance['tags'] for tag in tag_filters): #TODO tags system add this back in
-                 new_cache[instance_id] = instance
+            elif any(tag in instance['tags'] for tag in tag_filters):  # TODO tags system add this back in
+                new_cache[instance_id] = instance
 
         self.cached_nodes = new_cache
         return self.cached_nodes

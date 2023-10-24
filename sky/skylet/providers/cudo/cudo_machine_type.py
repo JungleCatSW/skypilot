@@ -1,3 +1,4 @@
+import csv
 import json
 
 import sky.skylet.providers.cudo.cudo_api_client as cudo_api
@@ -31,6 +32,19 @@ machine_specs = [
 ]
 
 
+def get_spec_from_instance(instance_type,data_center_id):
+    path = get_catalog_path(VMS_CSV)
+    spec = []
+    with open(path, mode='r') as file:
+        csv_reader = csv.reader(file)
+        for row in csv_reader:
+            if row and row[0] == instance_type and row[6] == data_center_id:
+                spec = row
+                break
+    return {'gpu_model': spec[1], 'vcpu_count': spec[3], 'mem_gb': spec[4], 'gpu_count': spec[2],
+            'machine_type': spec[0].split('_')[0]}
+
+
 def cudo_gpu_to_skypilot_gpu(model):
     if model in cudo_gpu_model:
         return cudo_gpu_model[model]
@@ -51,23 +65,27 @@ def get_gpu_info(count, model):
     info = {'Gpus': [{
         'Name': model,
         'Manufacturer': 'NVIDIA',
-        'Count': str(count)+'.0',
-        'MemoryInfo': {'SizeInMiB': 1024*mem}}],
-        'TotalGpuMemoryInMiB': 1024*mem*count}
+        'Count': str(count) + '.0',
+        'MemoryInfo': {'SizeInMiB': 1024 * mem}}],
+        'TotalGpuMemoryInMiB': 1024 * mem * count}
 
-    return '"'+json.dumps(info).replace('"',"'")+'"'
+    return '"' + json.dumps(info).replace('"', "'") + '"'
+
+
+def get_instance_type(machine_type, vcpu, mem, gpu):
+    return machine_type + "_" + str(gpu) + "x" + str(vcpu) + "v" + str(mem) + "gb"
 
 
 def update_prices():
     rows = []
-    # machine_types = cudo_api.machine_types(get_cudo_gpu_model('A4000'), 1, 2, 4, 'se-smedjebacken-1')
     gpu_types = cudo_api.gpu_types()
     for gpu in gpu_types:
         for spec in machine_specs:
             accelerator_name = cudo_gpu_to_skypilot_gpu(gpu)
+
             mts = cudo_api.machine_types(gpu, spec['mem'], spec['vcpu'], spec['gpu'])
             for hc in mts['host_configs']:
-                row = {'instance_type': hc['machine_type'],
+                row = {'instance_type': get_instance_type(hc['machine_type'], spec['gpu'], spec['vcpu'], spec['mem']),
                        'accelerator_name': accelerator_name,
                        'accelerator_count': str(spec['gpu']) + '.0',
                        'vcpus': str(spec['vcpu']),
@@ -94,5 +112,4 @@ def update_prices():
                     ]
             file.write(",".join(data) + '\n')
 
-    # mt = machine_types.to_dict()
     return

@@ -7,16 +7,10 @@ from sky.utils import ux_utils
 if typing.TYPE_CHECKING:
     from sky.clouds import cloud
 
-
 import sky.skylet.providers.cudo.cudo_machine_type as cudo_mt
-
 
 cudo_mt.update_prices()
 _df = common.read_catalog(cudo_mt.VMS_CSV)
-
-
-
-
 
 def instance_type_exists(instance_type: str) -> bool:
     return common.instance_type_exists_impl(_df, instance_type)
