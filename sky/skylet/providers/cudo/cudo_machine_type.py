@@ -7,6 +7,7 @@ from sky.clouds.service_catalog.common import get_catalog_path
 VMS_CSV = 'cudo/vms.csv'
 
 cudo_gpu_model = {
+    'NVIDIA V100':'V100',
     'RTX 3080': '3080',
     'RTX A4000': 'A4000',
     'RTX A4500': 'A4500',
@@ -20,6 +21,7 @@ cudo_gpu_mem = {
     'A4500': 20,
     'A5000': 24,
     'A6000': 48,
+    'V100':16,
 }
 
 machine_specs = [
@@ -97,7 +99,7 @@ def update_prices():
                        }
                 rows.append(row)
     path = get_catalog_path(VMS_CSV)
-    with open(path, 'w') as file:
+    with open(path, 'w') as file: # I assume the path is made on install
         file.write('InstanceType,AcceleratorName,AcceleratorCount,vCPUs,MemoryGiB,Price,Region,GpuInfo,SpotPrice\n')
         for row in rows:
             data = [row['instance_type'],
