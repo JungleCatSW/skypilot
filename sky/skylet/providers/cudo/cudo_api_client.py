@@ -1,15 +1,12 @@
 from typing import Dict
 import random
 import string
-import sky.skylet.providers.cudo.config as config
 
-import sky.skylet.providers.cudo.cudo_client.swagger_client as client
-import sky.skylet.providers.cudo.config as cudo_config
+from cudo_compute import cudo_api
 import sky.skylet.providers.cudo.temp_tags as cudo_tags
-from sky.skylet.providers.cudo.cudo_client.swagger_client import Body8
-from sky.skylet.providers.cudo.cudo_client.swagger_client import Disk
-
-from sky.skylet.providers.cudo.cudo_client.swagger_client.rest import ApiException
+from cudo_compute import Body8
+from cudo_compute import Disk
+from cudo_compute.rest import ApiException
 
 
 def generate_random_string(length):
@@ -47,9 +44,8 @@ def launch(name: str,
                     memory_gib=memory_gib, vcpus=vcpu_count, gpus=gpu_count, gpu_model=gpu_model, boot_disk=disk)
 
     try:
-        project_id, e = cudo_config.get_project()
-        c, e = get_client()
-        vm = c.create_vm(project_id, request)
+        api = cudo_api.virtual_machines()
+        vm = api.create_vm(cudo_api.project_id(), request)
         return vm.to_dict()['id']
     except ApiException as e:  # TODO what to do with errors ?
         raise e
@@ -57,9 +53,8 @@ def launch(name: str,
 
 def terminate(instance_id: str):
     try:
-        project_id, e = cudo_config.get_project()
-        c, e = get_client()
-        res = c.terminate_vm(project_id, instance_id)
+        api = cudo_api.virtual_machines()
+        res = api.terminate_vm(cudo_api.project_id(), instance_id)
         if res != None:
             return res.to_dict()
     except ApiException as e:  # TODO what to do with errors ?
@@ -74,9 +69,8 @@ def set_tags(instance_id: str, tags: Dict, api_key: str):
 
 def get_instance(vm_id):
     try:
-        project_id, e = cudo_config.get_project()
-        c, e = get_client()
-        vm = c.get_vm(project_id, vm_id)
+        api = cudo_api.virtual_machines()
+        vm = api.get_vm(cudo_api.project_id(), vm_id)
         vm_dict = vm.to_dict()
         return vm_dict
     except ApiException as e:  # TODO what to do with errors ?
@@ -85,9 +79,8 @@ def get_instance(vm_id):
 
 def list_instances():
     try:
-        project_id, e = cudo_config.get_project()
-        c, e = get_client()
-        vms = c.list_vms(project_id)
+        api = cudo_api.virtual_machines()
+        vms = api.list_vms(cudo_api.project_id())
         instances = {}
         vms_dict = vms.to_dict()
         for vm in vms_dict['vms']:
@@ -103,28 +96,10 @@ def list_instances():
     except ApiException as e:  # TODO what to do with errors ?
         raise e
 
-
-def get_client():
-    configuration = client.Configuration()
-    key, err = config.get_api_key()
-
-    if err != None:
-        return None, err
-
-    configuration.api_key['Authorization'] = key
-    # configuration.debug = True
-    configuration.api_key_prefix['Authorization'] = 'Bearer'
-    configuration.host = "https://rest.compute.cudo.org"
-
-    sclient = client.ApiClient(configuration)
-    vms_api_client = client.VirtualMachinesApi(sclient)
-    return vms_api_client, None
-
-
 def machine_types(gpu_model, mem_gib, vcpu_count, gpu_count):
     try:
-        c, e = get_client()
-        types = c.list_vm_machine_types(mem_gib, vcpu_count, gpu=gpu_count, gpu_model=gpu_model)
+        api = cudo_api.virtual_machines()
+        types = api.list_vm_machine_types(mem_gib, vcpu_count, gpu=gpu_count, gpu_model=gpu_model)
         types_dict = types.to_dict()
         return types_dict
     except ApiException as e:  # TODO what to do with errors ?
@@ -133,8 +108,8 @@ def machine_types(gpu_model, mem_gib, vcpu_count, gpu_count):
 
 def gpu_types():
     try:
-        c, e = get_client()
-        types = c.list_vm_machine_types(4, 2)
+        api = cudo_api.virtual_machines()
+        types = api.list_vm_machine_types(4, 2)
         types_dict = types.to_dict()
         gpu_names = []
         for gpu in types_dict['gpu_models']:

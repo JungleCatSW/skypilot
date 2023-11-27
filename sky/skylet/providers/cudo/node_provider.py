@@ -14,7 +14,6 @@ from ray.autoscaler.tags import TAG_RAY_CLUSTER_NAME
 from sky import authentication as auth
 
 import sky.skylet.providers.cudo.cudo_api_client as cudo_api
-import sky.skylet.providers.cudo.config as cudo_config
 from sky.skylet.providers.cudo.cudo_machine_type import get_spec_from_instance
 
 logger = logging.getLogger(__name__)

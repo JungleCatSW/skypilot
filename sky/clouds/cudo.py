@@ -11,9 +11,8 @@ if typing.TYPE_CHECKING:
     # Renaming to avoid shadowing variables.
     from sky import resources as resources_lib
 
-import sky.skylet.providers.cudo.cudo_api_client as cudo_api
-from sky.skylet.providers.cudo.cudo_client.swagger_client.rest import ApiException
-import sky.skylet.providers.cudo.config as cudo_config
+from cudo_compute import cudo_api
+from cudo_compute.rest import ApiException
 
 
 _CREDENTIAL_FILES = [
@@ -242,14 +241,14 @@ class Cudo(clouds.Cloud):
         return (_make(instance_list), fuzzy_candidate_list)
 
     def check_credentials(self) -> Tuple[bool, Optional[str]]:
-        c, error = cudo_api.get_client()
+        c, error = cudo_api.client()
 
         if error != None:
             return False, (
                 f'Application credentials are not set. '
                 f'{common_utils.format_exception(error, use_bracket=True)}')
 
-        project_id, e = cudo_config.get_project()
+        project_id, e = cudo_api.get_project_id()
         if e != None:
             return False, (
                 f'Error getting project '
@@ -308,7 +307,8 @@ class Cudo(clouds.Cloud):
             #TODO set others statuses to runn or None
         }
         status_list = []
-        vms = cudo_api.list_instances()
+        api = cudo_api.virtual_machines()
+        vms = api.list_instances()
         for node in vms:
             if vms[node]['name'] == name:
                 node_status = status_map[node['status']]
