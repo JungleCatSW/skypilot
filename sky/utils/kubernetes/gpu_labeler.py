@@ -1,5 +1,6 @@
 """Script to label GPU nodes in a Kubernetes cluster for use with SkyPilot"""
 import argparse
+import hashlib
 import os
 import subprocess
 from typing import Tuple
@@ -54,6 +55,12 @@ def cleanup() -> Tuple[bool, str]:
         return success, reason
 
 
+def get_node_hash(node_name: str):
+    # Generates a 32 character md5 hash from a string
+    md5_hash = hashlib.md5(node_name.encode()).hexdigest()
+    return md5_hash[:32]
+
+
 def label():
     deletion_success, reason = cleanup()
     if not deletion_success:
@@ -89,12 +96,21 @@ def label():
 
         # Iterate over nodes
         nodes = v1.list_node().items
-        # TODO(romilb): Run this only on nodes with GPUs.
+
+        # Get the list of nodes with GPUs
+        gpu_nodes = []
         for node in nodes:
+            if 'nvidia.com/gpu' in node.status.capacity:
+                gpu_nodes.append(node)
+
+        print(f'Found {len(gpu_nodes)} GPU nodes in the cluster')
+
+        for node in gpu_nodes:
             node_name = node.metadata.name
 
             # Modify the job manifest for the current node
-            job_manifest['metadata']['name'] = f'sky-gpu-labeler-{node_name}'
+            job_manifest['metadata']['name'] = ('sky-gpu-labeler-'
+                                                f'{get_node_hash(node_name)}')
             job_manifest['spec']['template']['spec']['nodeSelector'] = {
                 'kubernetes.io/hostname': node_name
             }
@@ -103,12 +119,17 @@ def label():
             # Create the job for this node`
             batch_v1.create_namespaced_job(namespace, job_manifest)
             print(f'Created GPU labeler job for node {node_name}')
-    print('GPU labeling started - this may take a few minutes to complete.'
-          '\nTo check the status of GPU labeling jobs, run '
-          '`kubectl get jobs --namespace=kube-system -l job=sky-gpu-labeler`'
-          '\nYou can check if nodes have been labeled by running '
-          '`kubectl describe nodes` and looking for labels of the format '
-          '`skypilot.co/accelerators: <gpu_name>`. ')
+    if len(gpu_nodes) == 0:
+        print('No GPU nodes found in the cluster. If you have GPU nodes, '
+              'please ensure that they have the label '
+              '`nvidia.com/gpu: <number of GPUs>`')
+    else:
+        print('GPU labeling started - this may take a few minutes to complete.'
+              '\nTo check the status of GPU labeling jobs, run '
+              '`kubectl get jobs -n kube-system -l job=sky-gpu-labeler`'
+              '\nYou can check if nodes have been labeled by running '
+              '`kubectl describe nodes` and looking for labels of the format '
+              '`skypilot.co/accelerators: <gpu_name>`. ')
 
 
 def main():
