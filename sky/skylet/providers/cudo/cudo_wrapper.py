@@ -56,7 +56,7 @@ def terminate(instance_id: str):
         api = cudo_api.virtual_machines()
         res = api.terminate_vm(cudo_api.project_id(), instance_id)
         if res != None:
-            return res.to_dict()
+            return res
     except ApiException as e:  # TODO what to do with errors ?
         raise e
 
