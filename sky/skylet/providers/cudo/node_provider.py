@@ -13,7 +13,8 @@ from ray.autoscaler.node_provider import NodeProvider
 from ray.autoscaler.tags import TAG_RAY_CLUSTER_NAME
 from sky import authentication as auth
 
-import sky.skylet.providers.cudo.cudo_api_client as cudo_api
+from cudo_compute import cudo_api
+import sky.skylet.providers.cudo.cudo_wrapper as cudo_wrapper
 from sky.skylet.providers.cudo.cudo_machine_type import get_spec_from_instance
 
 logger = logging.getLogger(__name__)
@@ -43,7 +44,7 @@ class CudoNodeProvider(NodeProvider):
         self.lock = RLock()
         self.cached_nodes = {}
 
-        api_key, error = cudo_config.get_api_key()
+        api_key, error = cudo_api.get_api_key()
         self.api_key = api_key
         self.ssh_key_path = os.path.expanduser(auth.PUBLIC_SSH_KEY_PATH)
         self.ssh_key_name = None  # TODO FILL_IN: Read from credentials file
@@ -100,7 +101,7 @@ class CudoNodeProvider(NodeProvider):
         for _ in range(count):
             spec = get_spec_from_instance(ttype, data_center_id)
 
-            instance_id = cudo_api.launch(name=self.cluster_name,
+            instance_id = cudo_wrapper.launch(name=self.cluster_name,
                                           ssh_key=public_key,
                                           data_center_id=data_center_id,
                                           machine_type=spec['machine_type'],
@@ -112,7 +113,7 @@ class CudoNodeProvider(NodeProvider):
                 raise CudoError('Failed to launch instance.')
 
             instance_ids.append(instance_id)
-            cudo_api.set_tags(instance_id, config_tags, self.api_key)
+            cudo_wrapper.set_tags(instance_id, config_tags, self.api_key)
 
         retries = 12  # times 10 second
         period = 10  # seconds
@@ -120,7 +121,7 @@ class CudoNodeProvider(NodeProvider):
         for id in instance_ids:
             n = 0
             while n in range(retries):
-                vm = cudo_api.get_instance(id)
+                vm = cudo_wrapper.get_instance(id)
                 if vm['vm']['short_state'] == 'runn':
                     results[id] = vm['vm']
                     break
@@ -136,11 +137,11 @@ class CudoNodeProvider(NodeProvider):
         """Sets the tag values (string dict) for the specified node."""
         node = self._get_node(node_id)
         node['tags'].update(tags)
-        cudo_api.set_tags(node_id, node['tags'], self.api_key)  # FILL_IN
+        cudo_wrapper.set_tags(node_id, node['tags'], self.api_key)  # FILL_IN
 
     def terminate_node(self, node_id: str) -> Optional[Dict[str, Any]]:
         """Terminates the specified node."""
-        cudo_api.terminate(node_id)
+        cudo_wrapper.terminate(node_id)
 
     @synchronized
     def _get_filtered_nodes(self, tag_filters: Dict[str, str]) -> Dict[str, Any]:
@@ -166,7 +167,7 @@ class CudoNodeProvider(NodeProvider):
             - name: str
             - ip: str
         """
-        instances = cudo_api.list_instances()  # TODO add tag filtering
+        instances = cudo_wrapper.list_instances()  # TODO add tag filtering
 
         new_cache = {}
         for instance_id, instance in instances.items():

@@ -1,7 +1,7 @@
 import csv
 import json
 
-import sky.skylet.providers.cudo.cudo_api_client as cudo_api
+import sky.skylet.providers.cudo.cudo_wrapper as cudo_wrapper
 from sky.clouds.service_catalog.common import get_catalog_path
 
 VMS_CSV = 'cudo/vms.csv'
@@ -80,12 +80,12 @@ def get_instance_type(machine_type, vcpu, mem, gpu):
 
 def update_prices():
     rows = []
-    gpu_types = cudo_api.gpu_types()
+    gpu_types = cudo_wrapper.gpu_types()
     for gpu in gpu_types:
         for spec in machine_specs:
             accelerator_name = cudo_gpu_to_skypilot_gpu(gpu)
 
-            mts = cudo_api.machine_types(gpu, spec['mem'], spec['vcpu'], spec['gpu'])
+            mts = cudo_wrapper.machine_types(gpu, spec['mem'], spec['vcpu'], spec['gpu'])
             for hc in mts['host_configs']:
                 row = {'instance_type': get_instance_type(hc['machine_type'], spec['gpu'], spec['vcpu'], spec['mem']),
                        'accelerator_name': accelerator_name,

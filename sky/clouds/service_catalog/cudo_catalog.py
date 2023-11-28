@@ -12,6 +12,7 @@ import sky.skylet.providers.cudo.cudo_machine_type as cudo_mt
 cudo_mt.update_prices()
 _df = common.read_catalog(cudo_mt.VMS_CSV)
 
+
 def instance_type_exists(instance_type: str) -> bool:
     return common.instance_type_exists_impl(_df, instance_type)
 
@@ -104,6 +105,6 @@ def list_accelerators(
         case_sensitive: bool = True
 ) -> Dict[str, List[common.InstanceTypeInfo]]:
     """Returns all instance types in Cudo offering GPUs."""
-    list =  common.list_accelerators_impl(
+    list = common.list_accelerators_impl(
         'Cudo', _df, gpus_only, name_filter, region_filter, quantity_filter, case_sensitive)
     return list

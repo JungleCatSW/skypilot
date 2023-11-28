@@ -70,7 +70,7 @@ def _generate_rsa_key_pair() -> Tuple[str, str]:
         encoding=serialization.Encoding.PEM,
         format=serialization.PrivateFormat.TraditionalOpenSSL,
         encryption_algorithm=serialization.NoEncryption()).decode(
-            'utf-8').strip()
+        'utf-8').strip()
 
     public_key = key.public_key().public_bytes(
         serialization.Encoding.OpenSSH,
@@ -123,13 +123,6 @@ def configure_ssh_info(config: Dict[str, Any]) -> Dict[str, Any]:
     config_str = config_str.replace('skypilot:ssh_public_key_content',
                                     public_key)
     config = yaml.safe_load(config_str)
-    return config
-
-def setup_cudo_authentication(config: Dict[str, Any]) -> Dict[str, Any]:
-    _, public_key_path = get_or_generate_keys()
-    with open(public_key_path, 'r') as f:
-        public_key = f.read().strip()
-    config = _replace_ssh_info_in_config(config, public_key)
     return config
 
 
@@ -301,7 +294,6 @@ def setup_azure_authentication(config: Dict[str, Any]) -> Dict[str, Any]:
 
 
 def setup_lambda_authentication(config: Dict[str, Any]) -> Dict[str, Any]:
-
     get_or_generate_keys()
 
     # Ensure ssh key is registered with Lambda Cloud

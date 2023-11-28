@@ -13,6 +13,7 @@ if typing.TYPE_CHECKING:
 
 from cudo_compute import cudo_api
 from cudo_compute.rest import ApiException
+import sky.skylet.providers.cudo.cudo_wrapper as cudo_wrapper
 
 
 _CREDENTIAL_FILES = [
@@ -23,7 +24,6 @@ _CREDENTIAL_FILES = [
 
 @clouds.CLOUD_REGISTRY.register
 class Cudo(clouds.Cloud):
-
     _REPR = 'cudo'
     _CLOUD_UNSUPPORTED_FEATURES = {
         clouds.CloudImplementationFeatures.STOP: 'Cudo does not support stopping VMs.',
@@ -33,7 +33,7 @@ class Cudo(clouds.Cloud):
     ########
     # TODO #
     ########
-    _MAX_CLUSTER_NAME_LEN_LIMIT =  100 # TODO
+    _MAX_CLUSTER_NAME_LEN_LIMIT = 100  # TODO
 
     _regions: List[clouds.Region] = []
 
@@ -80,21 +80,21 @@ class Cudo(clouds.Cloud):
 
     @classmethod
     def get_vcpus_mem_from_instance_type(
-        cls,
-        instance_type: str,
+            cls,
+            instance_type: str,
     ) -> Tuple[Optional[float], Optional[float]]:
 
         return service_catalog.get_vcpus_mem_from_instance_type(instance_type, clouds='cudo')
 
     @classmethod
     def zones_provision_loop(
-        cls,
-        *,
-        region: str,
-        num_nodes: int,
-        instance_type: Optional[str] = None,
-        accelerators: Optional[Dict[str, int]] = None,
-        use_spot: bool = False,
+            cls,
+            *,
+            region: str,
+            num_nodes: int,
+            instance_type: Optional[str] = None,
+            accelerators: Optional[Dict[str, int]] = None,
+            use_spot: bool = False,
     ) -> Iterator[None]:
         del num_nodes  # unused
         regions = cls.regions_with_offering(instance_type,
@@ -149,16 +149,16 @@ class Cudo(clouds.Cloud):
 
     @classmethod
     def get_accelerators_from_instance_type(
-        cls,
-        instance_type: str,
+            cls,
+            instance_type: str,
     ) -> Optional[Dict[str, int]]:
         return service_catalog.get_accelerators_from_instance_type(
             instance_type, clouds='cudo')
 
     @classmethod
     def get_vcpus_from_instance_type(
-        cls,
-        instance_type: str,
+            cls,
+            instance_type: str,
     ) -> Optional[float]:
         return service_catalog.get_vcpus_from_instance_type(instance_type,
                                                             clouds='cudo')
@@ -168,7 +168,9 @@ class Cudo(clouds.Cloud):
         return None
 
     def make_deploy_resources_variables(
-            self, resources: 'resources_lib.Resources',
+            self,
+            resources: 'resources_lib.Resources',
+            cluster_name_on_cloud: str,
             region: Optional['clouds.Region'],
             zones: Optional[List['clouds.Zone']]) -> Dict[str, Optional[str]]:
         del zones
@@ -254,8 +256,9 @@ class Cudo(clouds.Cloud):
                 f'Error getting project '
                 f'{common_utils.format_exception(e, use_bracket=True)}')
         try:
-            c.list_vms(project_id)
-            return True,None
+            api = cudo_api.virtual_machines()
+            api.list_vms(project_id)
+            return True, None
         except ApiException as e:
             return False, (
                 f'Error calling API '
@@ -304,11 +307,10 @@ class Cudo(clouds.Cloud):
             'susp': status_lib.ClusterStatus.STOPPED,
             'done': status_lib.ClusterStatus.STOPPED,
             'poff': status_lib.ClusterStatus.STOPPED,
-            #TODO set others statuses to runn or None
+            # TODO set others statuses to runn or None
         }
         status_list = []
-        api = cudo_api.virtual_machines()
-        vms = api.list_instances()
+        vms = cudo_wrapper.list_instances()
         for node in vms:
             if vms[node]['name'] == name:
                 node_status = status_map[node['status']]

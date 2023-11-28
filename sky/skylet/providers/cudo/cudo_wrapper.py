@@ -4,7 +4,7 @@ import string
 
 from cudo_compute import cudo_api
 import sky.skylet.providers.cudo.temp_tags as cudo_tags
-from cudo_compute import Body8
+from cudo_compute import Body11
 from cudo_compute import Disk
 from cudo_compute.rest import ApiException
 
@@ -39,7 +39,7 @@ def launch(name: str,
                 id=generate_random_string(10))  # , disk_type=disk_type)
     key_source = "SSH_KEY_SOURCE_NONE"
 
-    request = Body8(ssh_key_source=key_source, custom_ssh_keys=[ssh_key], vm_id=name, machine_type=machine_type,
+    request = Body11(ssh_key_source=key_source, custom_ssh_keys=[ssh_key], vm_id=name, machine_type=machine_type,
                     data_center_id=data_center_id, boot_disk_image_id='ubuntu-nvidia-docker',
                     memory_gib=memory_gib, vcpus=vcpu_count, gpus=gpu_count, gpu_model=gpu_model, boot_disk=disk)
 
