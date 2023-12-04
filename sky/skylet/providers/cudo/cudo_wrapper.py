@@ -26,7 +26,8 @@ def launch(name: str,
            memory_gib: int,
            vcpu_count: int,
            gpu_count: int,
-           gpu_model: str):
+           gpu_model: str,
+           tags: Dict[str, str]):
     """
 
     Launches an INSTANCE_TYPE instance in region REGION with given NAME.
@@ -35,13 +36,14 @@ def launch(name: str,
     Returns INSTANCE_ID if successful, otherwise returns None.
     """
 
-    disk = Disk(storage_class="STORAGE_CLASS_NETWORK", size_gib=50,
+    disk = Disk(storage_class="STORAGE_CLASS_NETWORK", size_gib=100,
                 id=generate_random_string(10))  # , disk_type=disk_type)
     key_source = "SSH_KEY_SOURCE_NONE"
 
     request = Body11(ssh_key_source=key_source, custom_ssh_keys=[ssh_key], vm_id=name, machine_type=machine_type,
-                    data_center_id=data_center_id, boot_disk_image_id='ubuntu-nvidia-docker',
-                    memory_gib=memory_gib, vcpus=vcpu_count, gpus=gpu_count, gpu_model=gpu_model, boot_disk=disk)
+                     data_center_id=data_center_id, boot_disk_image_id='ubuntu-nvidia-docker',
+                     memory_gib=memory_gib, vcpus=vcpu_count, gpus=gpu_count, gpu_model=gpu_model, boot_disk=disk,
+                     metadata=tags)
 
     try:
         api = cudo_api.virtual_machines()
@@ -95,6 +97,7 @@ def list_instances():
         return instances
     except ApiException as e:  # TODO what to do with errors ?
         raise e
+
 
 def machine_types(gpu_model, mem_gib, vcpu_count, gpu_count):
     try:

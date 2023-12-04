@@ -47,7 +47,7 @@ class CudoNodeProvider(NodeProvider):
         api_key, error = cudo_api.get_api_key()
         self.api_key = api_key
         self.ssh_key_path = os.path.expanduser(auth.PUBLIC_SSH_KEY_PATH)
-        self.ssh_key_name = None  # TODO FILL_IN: Read from credentials file
+        self.ssh_key_name = None
 
     def non_terminated_nodes(self, tag_filters: Dict[str, str]) -> List[str]:
         """Return a list of node ids filtered by the specified tags dict.
@@ -102,13 +102,14 @@ class CudoNodeProvider(NodeProvider):
             spec = get_spec_from_instance(ttype, data_center_id)
 
             instance_id = cudo_wrapper.launch(name=self.cluster_name,
-                                          ssh_key=public_key,
-                                          data_center_id=data_center_id,
-                                          machine_type=spec['machine_type'],
-                                          memory_gib=int(spec['mem_gb']),
-                                          vcpu_count=int(spec['vcpu_count']),
-                                          gpu_count=int(float(spec['gpu_count'])),
-                                          gpu_model=spec['gpu_model'])
+                                              ssh_key=public_key,
+                                              data_center_id=data_center_id,
+                                              machine_type=spec['machine_type'],
+                                              memory_gib=int(spec['mem_gb']),
+                                              vcpu_count=int(spec['vcpu_count']),
+                                              gpu_count=int(float(spec['gpu_count'])),
+                                              gpu_model=spec['gpu_model'],
+                                              tags=config_tags)
             if instance_id is None:
                 raise CudoError('Failed to launch instance.')
 
@@ -128,16 +129,13 @@ class CudoNodeProvider(NodeProvider):
                 else:
                     time.sleep(period)
         return results
-        #   TODO wait for -- but what if they don't boot ?
-        # FILL_IN: Only return after all nodes are booted.
-        # If needed poll fc_api.list_instances() to wait for status == 'running'
 
     @synchronized
     def set_node_tags(self, node_id: str, tags: Dict[str, str]) -> None:
         """Sets the tag values (string dict) for the specified node."""
         node = self._get_node(node_id)
         node['tags'].update(tags)
-        cudo_wrapper.set_tags(node_id, node['tags'], self.api_key)  # FILL_IN
+        cudo_wrapper.set_tags(node_id, node['tags'], self.api_key)
 
     def terminate_node(self, node_id: str) -> Optional[Dict[str, Any]]:
         """Terminates the specified node."""

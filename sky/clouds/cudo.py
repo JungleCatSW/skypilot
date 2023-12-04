@@ -1,4 +1,5 @@
 import json
+import subprocess
 import typing
 from typing import Dict, Iterator, List, Optional, Tuple
 
@@ -11,28 +12,45 @@ if typing.TYPE_CHECKING:
     # Renaming to avoid shadowing variables.
     from sky import resources as resources_lib
 
-from cudo_compute import cudo_api
-from cudo_compute.rest import ApiException
-import sky.skylet.providers.cudo.cudo_wrapper as cudo_wrapper
-
-
 _CREDENTIAL_FILES = [
     # credential files for Cudo,
     "cudo.yml"
 ]
 
 
+def _run_output(cmd):
+    proc = subprocess.run(cmd,
+                          shell=True,
+                          check=True,
+                          stderr=subprocess.PIPE,
+                          stdout=subprocess.PIPE)
+    return proc.stdout.decode('ascii')
+
+
 @clouds.CLOUD_REGISTRY.register
 class Cudo(clouds.Cloud):
     _REPR = 'cudo'
+
+    _INDENT_PREFIX = '    '
+    _DEPENDENCY_HINT = (
+        'Cudo tools are not installed. Run the following commands:\n'
+        f'{_INDENT_PREFIX}  $ pip install cudo-compute')
+
     _CLOUD_UNSUPPORTED_FEATURES = {
         clouds.CloudImplementationFeatures.STOP: 'Cudo does not support stopping VMs.',
         clouds.CloudImplementationFeatures.AUTOSTOP: 'Cudo does not support stopping VMs.',
         clouds.CloudImplementationFeatures.MULTI_NODE: 'Multi-node is not supported by the Cudo implementation yet.'
     }
-    ########
-    # TODO #
-    ########
+
+    _CREDENTIAL_HINT = (
+        'Install cudoctl and run the following commands:\n'
+        f'{_INDENT_PREFIX}  $ cudoctl init\n'
+        f'{_INDENT_PREFIX}  $ gcloud auth application-default login\n'
+        f'{_INDENT_PREFIX}For more info: '
+        'https://skypilot.readthedocs.io/en/latest/getting-started/installation.html#google-cloud-platform-gcp'
+        # pylint: disable=line-too-long
+    )
+
     _MAX_CLUSTER_NAME_LEN_LIMIT = 100  # TODO
 
     _regions: List[clouds.Region] = []
@@ -123,9 +141,6 @@ class Cudo(clouds.Cloud):
                                     region: Optional[str] = None,
                                     zone: Optional[str] = None) -> float:
         del accelerators, use_spot, region, zone  # unused
-        # FILL_IN: If accelerator costs are not included in instance_type cost,
-        # return the cost of the accelerators here. If accelerators are
-        # included in instance_type cost, return 0.0.
         return 0.0
 
     def get_egress_cost(self, num_gigabytes: float) -> float:
@@ -144,7 +159,11 @@ class Cudo(clouds.Cloud):
         return isinstance(other, Cudo)
 
     @classmethod
-    def get_default_instance_type(cls, cpus: Optional[str] = None) -> Optional[str]:
+    def get_default_instance_type(
+            cls,
+            cpus: Optional[str] = None,
+            memory: Optional[str] = None,
+            disk_tier: Optional[str] = None) -> Optional[str]:
         return service_catalog.get_default_instance_type(cpus=cpus, clouds='cudo')
 
     @classmethod
@@ -243,6 +262,23 @@ class Cudo(clouds.Cloud):
         return (_make(instance_list), fuzzy_candidate_list)
 
     def check_credentials(self) -> Tuple[bool, Optional[str]]:
+
+        try:
+            from cudo_compute import cudo_api
+        except(ImportError, subprocess.CalledProcessError) as e:
+            return False, (
+                f'{self._DEPENDENCY_HINT}\n'
+                f'{common_utils.format_exception(e, use_bracket=True)}')
+
+        try:
+            _run_output('cudoctl --version')
+        except(ImportError, subprocess.CalledProcessError) as e:
+            return False, (
+                f'{self._CREDENTIAL_HINT}\n'
+                f'{common_utils.format_exception(e, use_bracket=True)}')
+
+        from cudo_compute import cudo_api
+        from cudo_compute.rest import ApiException
         c, error = cudo_api.client()
 
         if error != None:
@@ -297,6 +333,7 @@ class Cudo(clouds.Cloud):
                      **kwargs) -> List[status_lib.ClusterStatus]:
         del tag_filters, region, zone, kwargs  # Unused.
 
+        import sky.skylet.providers.cudo.cudo_wrapper as cudo_wrapper
         status_map = {
             'init': status_lib.ClusterStatus.INIT,
             'pend': status_lib.ClusterStatus.INIT,
