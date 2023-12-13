@@ -8,6 +8,7 @@ VMS_CSV = 'cudo/vms.csv'
 
 cudo_gpu_model = {
     'NVIDIA V100':'V100',
+    'NVIDIA A40':'A40',
     'RTX 3080': '3080',
     'RTX A4000': 'A4000',
     'RTX A4500': 'A4500',
@@ -17,6 +18,7 @@ cudo_gpu_model = {
 
 cudo_gpu_mem = {
     '3080': 12,
+    'A40': 48,
     'A4000': 16,
     'A4500': 20,
     'A5000': 24,
@@ -60,6 +62,11 @@ def skypilot_gpu_to_cudo_gpu(model):
             return key
     return model
 
+def gpu_exists(model):
+    if model in cudo_gpu_model:
+        return True
+    return False
+
 
 def get_gpu_info(count, model):
     mem = cudo_gpu_mem[model]
@@ -83,6 +90,9 @@ def update_prices():
     gpu_types = cudo_wrapper.gpu_types()
     for gpu in gpu_types:
         for spec in machine_specs:
+            if not gpu_exists(gpu):
+                print("Found new gpu", gpu) #TODO log this
+                break
             accelerator_name = cudo_gpu_to_skypilot_gpu(gpu)
 
             mts = cudo_wrapper.machine_types(gpu, spec['mem'], spec['vcpu'], spec['gpu'])

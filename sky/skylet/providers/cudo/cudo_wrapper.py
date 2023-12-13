@@ -49,7 +49,7 @@ def launch(name: str,
         api = cudo_api.virtual_machines()
         vm = api.create_vm(cudo_api.project_id(), request)
         return vm.to_dict()['id']
-    except ApiException as e:  # TODO what to do with errors ?
+    except ApiException as e:
         raise e
 
 
@@ -57,9 +57,9 @@ def terminate(instance_id: str):
     try:
         api = cudo_api.virtual_machines()
         res = api.terminate_vm(cudo_api.project_id(), instance_id)
-        if res != None:
+        if res is not None:
             return res
-    except ApiException as e:  # TODO what to do with errors ?
+    except ApiException as e:
         raise e
 
 
@@ -75,7 +75,7 @@ def get_instance(vm_id):
         vm = api.get_vm(cudo_api.project_id(), vm_id)
         vm_dict = vm.to_dict()
         return vm_dict
-    except ApiException as e:  # TODO what to do with errors ?
+    except ApiException as e:
         raise e
 
 
@@ -95,7 +95,7 @@ def list_instances():
             }
             instances[vm['id']] = instance
         return instances
-    except ApiException as e:  # TODO what to do with errors ?
+    except ApiException as e:
         raise e
 
 
@@ -105,7 +105,7 @@ def machine_types(gpu_model, mem_gib, vcpu_count, gpu_count):
         types = api.list_vm_machine_types(mem_gib, vcpu_count, gpu=gpu_count, gpu_model=gpu_model)
         types_dict = types.to_dict()
         return types_dict
-    except ApiException as e:  # TODO what to do with errors ?
+    except ApiException as e:
         raise e
 
 
@@ -118,5 +118,5 @@ def gpu_types():
         for gpu in types_dict['gpu_models']:
             gpu_names.append(gpu['name'])
         return gpu_names
-    except ApiException as e:  # TODO what to do with errors ?
+    except ApiException as e:
         raise e

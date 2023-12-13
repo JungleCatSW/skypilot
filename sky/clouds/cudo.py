@@ -45,13 +45,12 @@ class Cudo(clouds.Cloud):
     _CREDENTIAL_HINT = (
         'Install cudoctl and run the following commands:\n'
         f'{_INDENT_PREFIX}  $ cudoctl init\n'
-        f'{_INDENT_PREFIX}  $ gcloud auth application-default login\n'
         f'{_INDENT_PREFIX}For more info: '
-        'https://skypilot.readthedocs.io/en/latest/getting-started/installation.html#google-cloud-platform-gcp'
+        'https://skypilot.readthedocs.io/en/latest/getting-started/installation.html' # TODO add links
         # pylint: disable=line-too-long
     )
 
-    _MAX_CLUSTER_NAME_LEN_LIMIT = 100  # TODO
+    _MAX_CLUSTER_NAME_LEN_LIMIT = 60
 
     _regions: List[clouds.Region] = []
 
@@ -68,7 +67,7 @@ class Cudo(clouds.Cloud):
     def regions(cls) -> List[clouds.Region]:
         if not cls._regions:
             ########
-            # TODO #
+            # TODO cant find any reason for this to need doing
             ########
             # Add the region from catalog entry
             cls._regions = [
@@ -145,7 +144,7 @@ class Cudo(clouds.Cloud):
 
     def get_egress_cost(self, num_gigabytes: float) -> float:
         ########
-        # TODO #
+        # TODO # egress cost not yet
         ########
         # Change if your cloud has egress cost. (You can do this later;
         # `return 0.0` is a good placeholder.)
@@ -224,11 +223,6 @@ class Cudo(clouds.Cloud):
                 r = resources.copy(
                     cloud=Cudo(),
                     instance_type=instance_type,
-                    ########
-                    # TODO #
-                    ########
-                    # Set to None if don't separately bill / attach
-                    # accelerators.
                     accelerators=None,
                     cpus=None,
                 )
@@ -344,7 +338,6 @@ class Cudo(clouds.Cloud):
             'susp': status_lib.ClusterStatus.STOPPED,
             'done': status_lib.ClusterStatus.STOPPED,
             'poff': status_lib.ClusterStatus.STOPPED,
-            # TODO set others statuses to runn or None
         }
         status_list = []
         vms = cudo_wrapper.list_instances()
