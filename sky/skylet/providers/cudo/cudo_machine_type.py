@@ -7,8 +7,8 @@ from sky.clouds.service_catalog.common import get_catalog_path
 VMS_CSV = 'cudo/vms.csv'
 
 cudo_gpu_model = {
-    'NVIDIA V100':'V100',
-    'NVIDIA A40':'A40',
+    'NVIDIA V100': 'V100',
+    'NVIDIA A40': 'A40',
     'RTX 3080': '3080',
     'RTX A4000': 'A4000',
     'RTX A4500': 'A4500',
@@ -23,20 +23,30 @@ cudo_gpu_mem = {
     'A4500': 20,
     'A5000': 24,
     'A6000': 48,
-    'V100':16,
+    'V100': 16,
 }
 
 machine_specs = [
+    # Low
     {'vcpu': 2, 'mem': 4, 'gpu': 1, },
     {'vcpu': 4, 'mem': 8, 'gpu': 1, },
     {'vcpu': 8, 'mem': 16, 'gpu': 2, },
     {'vcpu': 16, 'mem': 32, 'gpu': 2, },
     {'vcpu': 32, 'mem': 64, 'gpu': 4, },
     {'vcpu': 64, 'mem': 128, 'gpu': 8, },
+    # Mid
+    {'vcpu': 96, 'mem': 192, 'gpu': 8},
+    {'vcpu': 48, 'mem': 96, 'gpu': 4},
+    {'vcpu': 24, 'mem': 48, 'gpu': 2},
+    {'vcpu': 12, 'mem': 24, 'gpu': 1},
+    # Hi
+    {'vcpu': 96, 'mem': 192, 'gpu': 4},
+    {'vcpu': 48, 'mem': 96, 'gpu': 2},
+    {'vcpu': 24, 'mem': 48, 'gpu': 1},
 ]
 
 
-def get_spec_from_instance(instance_type,data_center_id):
+def get_spec_from_instance(instance_type, data_center_id):
     path = get_catalog_path(VMS_CSV)
     spec = []
     with open(path, mode='r') as file:
@@ -61,6 +71,7 @@ def skypilot_gpu_to_cudo_gpu(model):
         if value == model:
             return key
     return model
+
 
 def gpu_exists(model):
     if model in cudo_gpu_model:
@@ -91,7 +102,7 @@ def update_prices():
     for gpu in gpu_types:
         for spec in machine_specs:
             if not gpu_exists(gpu):
-                print("Found new gpu", gpu) #TODO log this
+                print("Found new gpu", gpu)  # TODO log this
                 break
             accelerator_name = cudo_gpu_to_skypilot_gpu(gpu)
 
@@ -109,7 +120,7 @@ def update_prices():
                        }
                 rows.append(row)
     path = get_catalog_path(VMS_CSV)
-    with open(path, 'w') as file: # I assume the path is made on install
+    with open(path, 'w') as file:  # I assume the path is made on install
         file.write('InstanceType,AcceleratorName,AcceleratorCount,vCPUs,MemoryGiB,Price,Region,GpuInfo,SpotPrice\n')
         for row in rows:
             data = [row['instance_type'],

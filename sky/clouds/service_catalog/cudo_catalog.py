@@ -21,7 +21,7 @@ def validate_region_zone(
         region: Optional[str],
         zone: Optional[str]) -> Tuple[Optional[str], Optional[str]]:
     if zone is not None:
-        with ux_utils.print_exception_no_traceback(): #TODO
+        with ux_utils.print_exception_no_traceback():
             raise ValueError('Cudo does not support zones.')
     return common.validate_region_zone_impl('cudo', _df, region, zone)
 
@@ -55,7 +55,7 @@ def get_vcpus_mem_from_instance_type(
     return common.get_vcpus_mem_from_instance_type_impl(_df, instance_type)
 
 
-def get_default_instance_type(cpus: Optional[str] = None, #TODO probably need to do something here
+def get_default_instance_type(cpus: Optional[str] = None,  # TODO probably need to do something here
                               memory: Optional[str] = None,
                               disk_tier: Optional[str] = None) -> Optional[str]:
     # NOTE: After expanding catalog to multiple entries, you may
@@ -80,7 +80,7 @@ def get_instance_type_for_accelerator(
     Returns a list of instance types satisfying the required count of
     accelerators with sorted prices and a list of candidates with fuzzy search.
     """
-    if zone is not None: #TODO
+    if zone is not None:  # TODO
         with ux_utils.print_exception_no_traceback():
             raise ValueError('Cudo does not support zones.')
     return common.get_instance_type_for_accelerator_impl(df=_df,
