@@ -2,20 +2,13 @@ from typing import Dict
 import random
 import string
 
-from cudo_compute import cudo_api
-import sky.skylet.providers.cudo.temp_tags as cudo_tags
-from cudo_compute import Body12
-from cudo_compute import Disk
+from cudo_compute import cudo_api, CreateVMBody, UpdateVMMetadataBody, Disk
 from cudo_compute.rest import ApiException
 
 
 def generate_random_string(length):
-    # Define the characters to choose from
     characters = string.ascii_lowercase + string.digits
-
-    # Generate a random string of the specified length
     random_string = ''.join(random.choice(characters) for _ in range(length))
-
     return random_string
 
 
@@ -28,22 +21,17 @@ def launch(name: str,
            gpu_count: int,
            gpu_model: str,
            tags: Dict[str, str]):
-    """
+    disk = Disk(storage_class="STORAGE_CLASS_NETWORK",
+                size_gib=100,
+                id=generate_random_string(10))
 
-    Launches an INSTANCE_TYPE instance in region REGION with given NAME.
-    The instance_type refers to the type found in the catalog.
-
-    Returns INSTANCE_ID if successful, otherwise returns None.
-    """
-
-    disk = Disk(storage_class="STORAGE_CLASS_NETWORK", size_gib=100,
-                id=generate_random_string(10))  # , disk_type=disk_type)
-    key_source = "SSH_KEY_SOURCE_NONE"
-
-    request = Body12(ssh_key_source=key_source, custom_ssh_keys=[ssh_key], vm_id=name, machine_type=machine_type,
-                     data_center_id=data_center_id, boot_disk_image_id='ubuntu-nvidia-docker',
-                     memory_gib=memory_gib, vcpus=vcpu_count, gpus=gpu_count, gpu_model=gpu_model, boot_disk=disk,
-                     metadata=tags)
+    request = CreateVMBody(ssh_key_source="SSH_KEY_SOURCE_NONE",
+                           custom_ssh_keys=[ssh_key],
+                           vm_id=name, machine_type=machine_type,
+                           data_center_id=data_center_id,
+                           boot_disk_image_id='ubuntu-nvidia-docker',
+                           memory_gib=memory_gib, vcpus=vcpu_count, gpus=gpu_count,
+                           gpu_model=gpu_model, boot_disk=disk, metadata=tags)
 
     try:
         api = cudo_api.virtual_machines()
@@ -62,10 +50,14 @@ def terminate(instance_id: str):
         return None
 
 
-def set_tags(instance_id: str, tags: Dict, api_key: str):
-    """Set tags for instance with given INSTANCE_ID."""
-    print("cudo set tags" + instance_id)
-    cudo_tags.set_tags(instance_id, tags)  # TODO replace this
+def set_tags(instance_id: str, tags: Dict):
+    try:
+        api = cudo_api.virtual_machines()
+        api.update_vm_metadata(cudo_api.project_id(),
+                               instance_id,
+                               UpdateVMMetadataBody(metadata=tags, merge=True))  # TODO merge or overwrite?
+    except ApiException as e:
+        raise e
 
 
 def get_instance(vm_id):
@@ -85,11 +77,10 @@ def list_instances():
         instances = {}
         vms_dict = vms.to_dict()
         for vm in vms_dict['vms']:
-            tags = cudo_tags.get_tags(vm['id'])
             instance = {
                 'status': vm['short_state'],  # active_state, init_state, lcm_state, short_state
-                'tags': tags,
-                'name': vm['id'],  # TODO check ip address for private networks
+                'tags': vm['metadata'],
+                'name': vm['id'],
                 'ip': vm['public_ip_address']  # public_ip_address, external_ip_address,
             }
             instances[vm['id']] = instance

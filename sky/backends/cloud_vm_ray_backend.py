@@ -957,7 +957,7 @@ class RetryingVmProvisioner(object):
         else:
             self._blocked_resources.add(launchable_resources.copy(zone=None))
 
-    def _update_blocklist_on_cudo_error( #TODO complete this
+    def _update_blocklist_on_cudo_error(
             self, launchable_resources: 'resources_lib.Resources',
             region: 'clouds.Region', zones: Optional[List['clouds.Zone']],
             stdout: str, stderr: str):

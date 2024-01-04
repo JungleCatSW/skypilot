@@ -12,6 +12,7 @@ from threading import RLock
 from ray.autoscaler.node_provider import NodeProvider
 from ray.autoscaler.tags import TAG_RAY_CLUSTER_NAME
 from sky import authentication as auth
+from sky.skylet.providers.oci import utils
 
 from cudo_compute import cudo_api
 import sky.skylet.providers.cudo.cudo_wrapper as cudo_wrapper
@@ -49,6 +50,7 @@ class CudoNodeProvider(NodeProvider):
         self.ssh_key_path = os.path.expanduser(auth.PUBLIC_SSH_KEY_PATH)
         self.ssh_key_name = None
 
+    @utils.debug_enabled(logger=logger)
     def non_terminated_nodes(self, tag_filters: Dict[str, str]) -> List[str]:
         """Return a list of node ids filtered by the specified tags dict.
 
@@ -64,29 +66,53 @@ class CudoNodeProvider(NodeProvider):
 
         return [node_id for node_id, _ in nodes.items()]
 
+    @utils.debug_enabled(logger=logger)
     def is_running(self, node_id: str) -> bool:
         """Return whether the specified node is running."""
         return self._get_cached_node(node_id=node_id) is not None
 
+    @utils.debug_enabled(logger=logger)
     def is_terminated(self, node_id: str) -> bool:
         """Return whether the specified node is terminated."""
         return self._get_cached_node(node_id=node_id) is None
 
+    @utils.debug_enabled(logger=logger)
     def node_tags(self, node_id: str) -> Dict[str, str]:
         """Returns the tags of the given node (string dict)."""
         return self._get_cached_node(node_id=node_id)['tags']
 
+    @utils.debug_enabled(logger=logger)
     def external_ip(self, node_id: str) -> str:
         """Returns the external ip of the given node."""
         return self._get_cached_node(node_id=node_id)['ip']
 
+    @utils.debug_enabled(logger=logger)
     def internal_ip(self, node_id: str) -> str:
         """Returns the internal ip (Ray ip) of the given node."""
         return self._get_cached_node(node_id=node_id)['ip']
 
+    def create_node_with_resources_and_labels(
+            self,
+            node_config: Dict[str, Any],
+            tags: Dict[str, str],
+            count: int,
+            resources: Dict[str, float],
+            labels: Dict[str, str],
+    ) -> Optional[Dict[str, Any]]:
+        """Create nodes with a given resource and label config.
+
+        This is the method actually called by the autoscaler. Prefer to
+        implement this when possible directly, otherwise it delegates to the
+        create_node() implementation.
+
+        Optionally may throw a ray.autoscaler.node_launch_exception.NodeLaunchException.
+        """
+        return self.create_node(node_config, tags, count)
+
+    @synchronized
+    @utils.debug_enabled(logger=logger)
     def create_node(self, node_config: Dict[str, Any], tags: Dict[str, str], count: int) -> Optional[Dict[str, Any]]:
-        """Creates a number of nodes within the namespace."""
-        # Get the tags
+        logger.info(node_config)
         config_tags = node_config.get('tags', {}).copy()
         config_tags.update(tags)
         config_tags[TAG_RAY_CLUSTER_NAME] = self.cluster_name
@@ -114,7 +140,7 @@ class CudoNodeProvider(NodeProvider):
                 raise CudoError('Failed to launch instance.')
 
             instance_ids.append(instance_id)
-            cudo_wrapper.set_tags(instance_id, config_tags, self.api_key)
+            cudo_wrapper.set_tags(instance_id, config_tags)
 
         retries = 12  # times 10 second
         period = 10  # seconds
@@ -131,12 +157,15 @@ class CudoNodeProvider(NodeProvider):
         return results
 
     @synchronized
+    @utils.debug_enabled(logger=logger)
     def set_node_tags(self, node_id: str, tags: Dict[str, str]) -> None:
         """Sets the tag values (string dict) for the specified node."""
         node = self._get_node(node_id)
         node['tags'].update(tags)
         cudo_wrapper.set_tags(node_id, node['tags'], self.api_key)
 
+    @synchronized
+    @utils.debug_enabled(logger=logger)
     def terminate_node(self, node_id: str) -> Optional[Dict[str, Any]]:
         """Terminates the specified node."""
         cudo_wrapper.terminate(node_id)
